@@ -135,7 +135,7 @@ class PostInfo(db.Model):
     subthread = db.relationship("Subthread", back_populates="post_info")
     user = db.relationship("User", back_populates="post_info")
 
-    def as_dict(self, cur_user=None):
+    def as_dict(self, cur_user=None, user_reactions=None, user_saved_posts=None):
         p_info = {
             "user_info": {
                 "user_name": self.user_name,
@@ -158,10 +158,22 @@ class PostInfo(db.Model):
             },
         }
         if cur_user:
-            has_reaction = Reactions.query.filter_by(post_id=self.post_id, user_id=cur_user).first()
+            has_upvoted = None
+            if user_reactions is not None:
+                has_upvoted = user_reactions.get(self.post_id)
+            else:
+                has_reaction = Reactions.query.filter_by(post_id=self.post_id, user_id=cur_user).first()
+                has_upvoted = has_reaction.is_upvote if has_reaction else None
+
+            is_saved = False
+            if user_saved_posts is not None:
+                is_saved = self.post_id in user_saved_posts
+            else:
+                is_saved = bool(SavedPosts.query.filter_by(user_id=cur_user, post_id=self.post_id).first())
+
             p_info["current_user"] = {
-                "has_upvoted": has_reaction.is_upvote if has_reaction else None,
-                "saved": bool(SavedPosts.query.filter_by(user_id=cur_user, post_id=self.post_id).first()),
+                "has_upvoted": has_upvoted,
+                "saved": is_saved,
             }
         return p_info
 
