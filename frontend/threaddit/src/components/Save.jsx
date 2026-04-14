@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAuthContext from "./AuthContext";
 import Svg from "./Svg";
@@ -18,6 +18,10 @@ export default function Save({ postId, initialSaved = false }) {
   const location = useLocation();
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    setSaved(initialSaved);
+  }, [initialSaved]);
+
   const { mutate, isPending } = useMutation({
     mutationFn: async ({ saved }) => {
       if (saved) {
@@ -30,6 +34,7 @@ export default function Save({ postId, initialSaved = false }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["post/comment"] });
     },
   });
 
