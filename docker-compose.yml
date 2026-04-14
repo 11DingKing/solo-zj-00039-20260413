@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: threaddit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "5001:5000"
+    environment:
+      - DATABASE_URI=postgresql://postgres:password@postgres:5432/threaddit
+      - SECRET_KEY=dev-secret-key
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend/threaddit
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
